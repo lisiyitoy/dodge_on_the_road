@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Dodge On The Road</title>
+        <link rel="stylesheet" href="setup.css">
+        <link href="https://fonts.googleapis.com/css?family=Permanent+Marker" rel="stylesheet">
+    </head>
+    
+    <body>
+        <h1>Dodge On The Road</h1>
+        <script>            
+            var myGameArea = makeGameArea(600, 800, "myArea", "#4d4d4d");
+            var myContext = myGameArea.getContext("2d");
+            var myGamePiece = new makeComponent(myContext, 30, 30, "red", 300, 750);
+            var Obstacles = [];
+            var blocks = [];
+            var events = [];
+            
+            window.addEventListener( "keydown", function(e){myGamePiece.keyList[e.keyCode] = true} );
+            window.addEventListener( "keyup", function(e){myGamePiece.keyList[e.keyCode] = false} );
+            var controller = setInterval(function(){keyDetect(myGamePiece, 600, 800)}, 10);           
+            var racing = setInterval(function(){drawObstacles(myGameArea, myContext, Obstacles)}, 15);
+            
+            events.push(controller);
+            events.push(racing);
+            setInterval(function(){gameOver(myGamePiece, Obstacles, events, myContext, myGameArea.frame)}, 8);
+                      
+            function makeGameArea(width, height, idName, backgroundColor){
+                var gameArea = document.createElement("canvas");
+                gameArea.id = idName;
+                gameArea.width = width;
+                gameArea.height = height;
+                gameArea.frame = 0;
+                gameArea.style = "background-color:" + backgroundColor;
+                document.body.appendChild(gameArea);
+                return gameArea;
+            }
+            
+            function stopWorking(eventList){
+                for(i=0; i<eventList.length; i++){
+                    clearInterval(eventList[i]);
+                }
+            }
+            
+            function makeComponent(ctx, width, height, color, x, y){
+                this.width = width;
+                this.height = height;
+                this.x = x;
+                this.y = y;
+                this.speedX = 0;
+                this.speedY = 0;
+                this.keyList = {37:false, 39:false, 38:false, 40:false};
+                this.context = ctx;           
+                
+                this.draw = function(){
+                    this.context.fillStyle = color;
+                    this.context.fillRect(this.x, this.y, this.width, this.height);
+                }
+                
+                this.move = function(){
+                    this.context.fillStyle = color;
+                    this.context.clearRect(this.x, this.y, this.width, this.height);
+                    this.x = this.x + this.speedX;
+                    this.y = this.y + this.speedY;
+                    this.draw();
+                }
+                
+                this.crashWith = function(object){
+                    var myLeft = this.x;
+                    var myRight = this.x + this.width;
+                    var myTop = this.y;
+                    var myBottom = this.y + this.height;
+                    var objectLeft = object.x;
+                    var objectRight = object.x + object.width;
+                    var objectTop = object.y;
+                    var objectBottom = object.y + object.height;
+                    var crashing = true;
+                    if( (myBottom < objectTop) || (myTop > objectBottom) || (myRight < objectLeft) || (myLeft > objectRight) ){
+                        crashing = false;
+                    }
+                    return crashing;
+                }
+            }
+            
+            function makeScore(ctx, score, fontSize, fontType, color, x, y){
+                this.text = "Score: " + score;
+                ctx.fillStyle = color;
+                ctx.font = fontSize + " " + fontType;
+                ctx.clearRect(0, 0, 250, 200);
+                ctx.fillText(this.text, x, y)
+            }
+            
+            function keyDetect(object, borderX, borderY){            
+                //update speed
+                if(object.keyList[37] == true){
+                    //left
+                    object.speedX = -3;
+                }
+                else if(object.keyList[39] == true){
+                    //right
+                    object.speedX = 3;
+                }
+                else{
+                    object.speedX = 0;
+                }
+                
+                if(object.keyList[38] == true){
+                    //up
+                    object.speedY = -3;
+                }
+                else if(object.keyList[40] == true){
+                    //down
+                    object.speedY = 3;
+                }
+                else{
+                    object.speedY = 0;
+                }
+                
+                //check if the object go beyond the border
+                if(object.x + object.speedX < 0){
+                   object.speedX = 0 - object.x;
+                }             
+                if(object.y + object.speedY < 0){
+                    object.speedY = 0 - object.y;
+                }              
+                if(object.x + object.speedX + object.width >= borderX){
+                    object.speedX = borderX - object.x - object.width;
+                }                
+                if(object.y + object.speedY + object.height >= borderY){
+                    object.speedY = borderY - object.y - object.height;
+                }
+                
+                object.move();                  
+            }
+            
+            function movingDown(object){
+                object.speedY = 2;
+                object.move(); 
+            }
+            
+            function intervalTask(object, n){
+                if( (object.frame/n) % 1 == 0 ){
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            }
+            
+            function drawObstacles(map, ctx, obstacleList){
+                map.frame++;
+                
+                makeScore(ctx, map.frame, "30px", "Arial", "red", 10, 50);
+                
+                if(intervalTask(map, 110)){
+                    var roadNumber = Math.floor((Math.random() * 3 ) + 1);
+                    var length = Math.floor((Math.random() * 50 ) + 30);
+                    if(roadNumber == 1){
+                        var leftObstacle = new makeComponent( ctx, 150, length, "#e6e600", 25, length*-1 );
+                        obstacleList.push(leftObstacle);
+                    }
+                    else if(roadNumber == 2){
+                        var middleObstacle = new makeComponent( ctx, 150, length, "#e6e600", 230, length*-1 );
+                        obstacleList.push(middleObstacle);
+                    }
+                    else if(roadNumber == 3){
+                        var rightObstacle = new makeComponent( ctx, 150, length, "#e6e600", 430, length*-1 );
+                        obstacleList.push(rightObstacle);
+                    }
+                }
+                
+                if(map.frame == 1 || intervalTask(map, 130)){                    
+                    var leftLine = new makeComponent(ctx, 10, 110, "white", 200, -100);
+                    var rightLine = new makeComponent(ctx, 10, 110, "white", 400, -100);
+                    obstacleList.push(leftLine);
+                    obstacleList.push(rightLine);
+                }
+                
+                for(i=0; i<obstacleList.length; i++){
+                    movingDown(obstacleList[i]);
+                }
+            }
+            
+            function gameOver(myObject, obstacle1, eventList, ctx, score){
+                for(i=0; i<obstacle1.length; i++){
+                    if(myObject.crashWith(obstacle1[i])){
+                        stopWorking(eventList);
+                        var display = "Your score is " + score;
+                        ctx.fillStyle = "#0000cc";
+                        ctx.font = "50px Arial";
+                        ctx.fillText(display, 100, 400);
+                        return;
+                    }
+                }
+            }            
+        </script>
+        
+        <br>
+        <center>
+        <form style="display:inline-block;">
+            <input class="myButton" onclick="window.location.href='https://lisiyitoy.github.io/'" type="button" value="Return home page">
+        </form>
+        <form style="display:inline-block;">
+            <input class="myButton" onclick="window.location.href='https://lisiyitoy.github.io/dodge_on_the_road/'" type="button" value="Restart">
+        </form>
+        </center>
+    </body>
+    
+</html>

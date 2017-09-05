@@ -1,0 +1,17 @@
+canvas 
+{
+    border: 1px solid #d3d3d3;
+    padding: 0;
+    margin: auto;
+    display: block;
+}
+
+h1 
+{
+    font-size: 60px;
+    text-align: center;
+    font-family: 'Permanent Marker', cursive;
+    color: #6600cc;
+    margin: auto;
+    padding: 0;
+}
